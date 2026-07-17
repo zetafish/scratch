@@ -325,16 +325,24 @@
     <div class="panel">
       <h2>Extra Inkomsten</h2>
       <div class="input-group">
-        <label>Foodtruck omzet per yard €</label>
-        <input type="number" id="foodtruck_per_yard" value="3" step="0.5" oninput="calc()">
+        <label>Foodtruck gem. besteding €</label>
+        <input type="number" id="foodtruck_besteding" value="8" step="1" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Foodtruck % omzet afdracht</label>
+        <label>Foodtruck: 1x kopen per X uur</label>
+        <input type="number" id="foodtruck_freq" value="4" step="1" min="1" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Foodtruck % omzet afdracht aan org</label>
         <input type="number" id="foodtruck_pct" value="10" step="1" min="0" max="50" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Shop omzet per yard €</label>
-        <input type="number" id="shop_per_yard" value="1.5" step="0.5" oninput="calc()">
+        <label>Shop gem. besteding €</label>
+        <input type="number" id="shop_besteding" value="15" step="1" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Shop: % aanwezigen dat iets koopt</label>
+        <input type="number" id="shop_kopers_pct" value="30" step="5" min="0" max="100" oninput="calc()">
       </div>
       <div class="input-group">
         <label>Shop netto marge %</label>
@@ -344,6 +352,7 @@
         <label>Overige sponsoring / partnerships €</label>
         <input type="number" id="sponsoring" value="0" step="500" oninput="calc()">
       </div>
+      <div class="staffel-info" id="omzet_info"></div>
     </div>
 
   </div>
@@ -617,22 +626,35 @@ function calcForN(n) {
   const lastYard = lastActiveYard;
   const avgYardsPerRunner = n > 0 ? totalYards / n : 0;
 
-  // Extra inkomsten (per yard)
-  const foodtruckPerYard = val('foodtruck_per_yard');
+  // Extra inkomsten
+  // Foodtruck: aanwezigen (runners + support crew) kopen gem 1x per X uur
+  const crewDeeln = Math.round(n * crewRatio);
+  const aanwezigenTotaal = n + crewDeeln;
+  const foodtruckBesteding = val('foodtruck_besteding');
+  const foodtruckFreq = val('foodtruck_freq');
   const foodtruckPct = val('foodtruck_pct') / 100;
-  const foodtruckOmzet = totalYards * foodtruckPerYard;
+  // Aankoopkansen = totale persoon-uren / freq
+  // Persoon-uren ≈ support crew × lastYard + totalYards (runners aanwezig per uur)
+  const supportCrewUren = crewDeeln * lastYard;
+  const persoonUren = totalYards + supportCrewUren;
+  const foodtruckAankopen = persoonUren / foodtruckFreq;
+  const foodtruckOmzet = foodtruckAankopen * foodtruckBesteding;
   const foodtruckAfdracht = foodtruckOmzet * foodtruckPct;
-  const shopPerYard = val('shop_per_yard');
+
+  // Shop: eenmalige aankoop, % van alle aanwezigen
+  const shopBesteding = val('shop_besteding');
+  const shopKopersPct = val('shop_kopers_pct') / 100;
   const shopMargePct = val('shop_marge_pct') / 100;
-  const shopOmzet = totalYards * shopPerYard;
+  const shopKopers = Math.round(aanwezigenTotaal * shopKopersPct);
+  const shopOmzet = shopKopers * shopBesteding;
   const shopMarge = shopOmzet * shopMargePct;
+
   const sponsoring = val('sponsoring');
   const extraInkomsten = foodtruckAfdracht + shopMarge + sponsoring;
 
   const bruto = ticketInkomsten + extraInkomsten;
 
-  const crewDeeln = Math.round(n * crewRatio);
-  const aanwezigen = n + crewDeeln;
+  const aanwezigen = aanwezigenTotaal;
 
   // Veerboot deelnemers (alleen heen)
   const veerTarief = getVeerbootTarief(n, veerType);
@@ -661,8 +683,10 @@ function calcForN(n) {
 
   return {
     bruto, ticketInkomsten, extraInkomsten, totaalKosten,
-    totalYards, lastYard, avgYardsPerRunner, yardBreakdown,
-    foodtruckOmzet, foodtruckAfdracht, shopOmzet, shopMarge, sponsoring,
+    totalYards, lastYard, avgYardsPerRunner, yardBreakdown, persoonUren,
+    foodtruckOmzet, foodtruckAfdracht, foodtruckAankopen,
+    shopOmzet, shopMarge, shopKopers, sponsoring,
+    crewDeeln: crewDeeln,
     netto: bruto - totaalKosten,
     marge: bruto > 0 ? ((bruto - totaalKosten) / bruto * 100) : 0,
     nettoTicket, veerTarief, crewDeeln, aanwezigen, ehbo,
@@ -703,6 +727,10 @@ function calc() {
     `${r.lastYard} rondes tot winnaar · ${r.avgYardsPerRunner.toFixed(1)} gem. yards per deelnemer<br>` +
     `Eventduur: ~${r.lastYard} uur (1 yard = 1 uur)`;
 
+  document.getElementById('omzet_info').innerHTML =
+    `<strong>Foodtruck:</strong> ${r.persoonUren.toLocaleString('nl-NL')} persoon-uren ÷ ${val('foodtruck_freq')}u = ~${Math.round(r.foodtruckAankopen)} aankopen → omzet ${fmt(r.foodtruckOmzet)}<br>` +
+    `<strong>Shop:</strong> ${r.shopKopers} kopers van ${n + r.crewDeeln} aanwezigen → omzet ${fmt(r.shopOmzet)}`;
+
   // Break-even calculation
   let be = 50;
   while (be <= 750) {
@@ -725,8 +753,8 @@ function calc() {
   // Inkomsten tabel
   const incRows = [
     ['Ticketverkoop', 'Variabel', `${n} × ${fmtDec(r.nettoTicket)} (excl. btw)`, r.ticketInkomsten],
-    ['Foodtruck omzetafdracht', 'Per yard', `${r.totalYards} yards × ${fmtDec(val('foodtruck_per_yard'))} × ${val('foodtruck_pct')}% = omzet ${fmt(r.foodtruckOmzet)}`, r.foodtruckAfdracht],
-    ['Eigen shop netto marge', 'Per yard', `${r.totalYards} yards × ${fmtDec(val('shop_per_yard'))} × ${val('shop_marge_pct')}% = omzet ${fmt(r.shopOmzet)}`, r.shopMarge],
+    ['Foodtruck omzetafdracht', 'Variabel', `${Math.round(r.foodtruckAankopen)} aankopen × ${fmtDec(val('foodtruck_besteding'))} × ${val('foodtruck_pct')}% → omzet ${fmt(r.foodtruckOmzet)}`, r.foodtruckAfdracht],
+    ['Eigen shop netto marge', 'Variabel', `${r.shopKopers} kopers × ${fmtDec(val('shop_besteding'))} × ${val('shop_marge_pct')}% → omzet ${fmt(r.shopOmzet)}`, r.shopMarge],
     ['Sponsoring / partnerships', 'Vast', '', r.sponsoring],
   ];
   let incHtml = '';
