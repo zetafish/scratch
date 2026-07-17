@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Last Man Standing Terschelling — Financieel Model</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242836;
+    --border: #2e3347;
+    --text: #e4e6f0;
+    --text-dim: #8b8fa8;
+    --accent: #6c8cff;
+    --green: #4ade80;
+    --red: #f87171;
+    --orange: #fbbf24;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: 2rem;
+  }
+  h1 { font-size: 1.5rem; margin-bottom: .25rem; }
+  .subtitle { color: var(--text-dim); margin-bottom: 2rem; font-size: .9rem; }
+  .grid { display: grid; grid-template-columns: 340px 1fr; gap: 2rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .panel h2 {
+    font-size: .85rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .input-group { margin-bottom: .75rem; }
+  .input-group label {
+    display: block;
+    font-size: .8rem;
+    color: var(--text-dim);
+    margin-bottom: .25rem;
+  }
+  .input-group input, .input-group select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: .5rem .75rem;
+    border-radius: 8px;
+    font-size: .9rem;
+  }
+  .input-group input:focus, .input-group select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .5rem;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .stat .label { font-size: .75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+  .stat .value { font-size: 1.6rem; font-weight: 700; margin-top: .25rem; }
+  .stat .sub { font-size: .8rem; color: var(--text-dim); margin-top: .15rem; }
+  .positive { color: var(--green); }
+  .negative { color: var(--red); }
+  .warning { color: var(--orange); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+  }
+  th {
+    text-align: left;
+    color: var(--text-dim);
+    font-weight: 500;
+    padding: .5rem .75rem;
+    border-bottom: 1px solid var(--border);
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  td {
+    padding: .5rem .75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  tr:last-child td { border-bottom: none; }
+  .right { text-align: right; }
+  .row-total td { font-weight: 700; border-top: 2px solid var(--border); }
+  .row-subtotal td { font-weight: 600; color: var(--accent); }
+
+  .staffel-info {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: .75rem 1rem;
+    margin-top: .75rem;
+    font-size: .8rem;
+    color: var(--text-dim);
+  }
+  .staffel-info strong { color: var(--text); }
+
+  .slider-value {
+    display: inline-block;
+    min-width: 3em;
+    text-align: right;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .assumptions {
+    font-size: .8rem;
+    color: var(--text-dim);
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .assumptions a { color: var(--accent); }
+
+  .scenario-btns {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 1rem;
+  }
+  .scenario-btns button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: .4rem .75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: .8rem;
+  }
+  .scenario-btns button:hover { border-color: var(--accent); }
+
+  .breakeven-bar {
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    margin-top: .5rem;
+    overflow: hidden;
+    position: relative;
+  }
+  .breakeven-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width .3s;
+  }
+</style>
+</head>
+<body>
+
+<h1>Last Man Standing Terschelling — Financieel Model</h1>
+<p class="subtitle">Organisatorperspectief · Oktober 2026 · Alle bedragen excl. btw tenzij anders vermeld</p>
+
+<div class="scenario-btns">
+  <button onclick="setScenario('klein')">Klein (100)</button>
+  <button onclick="setScenario('middel')">Middel (200)</button>
+  <button onclick="setScenario('groot')">Groot (350)</button>
+  <button onclick="setScenario('uitverkocht')">Uitverkocht (500)</button>
+</div>
+
+<div class="grid">
+  <div class="controls">
+
+    <div class="panel">
+      <h2>Deelnemers & Tickets</h2>
+      <div class="input-group">
+        <label>Aantal deelnemers: <span class="slider-value" id="v_deelnemers">200</span></label>
+        <input type="range" id="deelnemers" min="50" max="750" step="10" value="200" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Ticketprijs (incl. btw) €</label>
+        <input type="number" id="ticketprijs" value="180" step="5" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Crew-leden per deelnemer (max 2)</label>
+        <input type="number" id="crew_ratio" value="0.5" step="0.1" min="0" max="2" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Veerboot (Doeksen groepstarief)</h2>
+      <div class="input-group">
+        <label>Dienst</label>
+        <select id="veerboot_type" onchange="calc()">
+          <option value="veer_winter">Veerdienst (winter/okt: €16.57-18.73 enkel p.p.)</option>
+          <option value="snel">Sneldienst (€27.85-30.01 enkel p.p.)</option>
+        </select>
+      </div>
+      <div class="staffel-info">
+        <strong>Staffel veerdienst (enkel, winter):</strong><br>
+        15-30 pers: €18.73 · 31-50: €17.69 · 51+: €16.57<br>
+        <em>Alleen heenreis deelnemers vergoed door org.</em>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>EHBO & Medische zorg</h2>
+      <div class="input-group">
+        <label>Uurtarief EHBO'er €</label>
+        <input type="number" id="ehbo_uurtarief" value="30" step="5" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Uren per dag (event duurt 3-4 dagen)</label>
+        <input type="number" id="ehbo_uren" value="16" step="1" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Aantal eventdagen</label>
+        <input type="number" id="event_dagen" value="3" step="1" min="1" max="5" oninput="calc()">
+      </div>
+      <div class="staffel-info" id="ehbo_staffel_info"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Locatie & Logistiek</h2>
+      <div class="input-group">
+        <label>Locatiehuur MooiWeer (totaal) €</label>
+        <input type="number" id="locatie_huur" value="3000" step="250" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Materiaal & infra (hekken, timing, borden) €</label>
+        <input type="number" id="materiaal" value="2500" step="250" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Vergunning & leges €</label>
+        <input type="number" id="vergunning" value="500" step="50" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Verzekering evenement €</label>
+        <input type="number" id="verzekering" value="1500" step="100" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Merchandise & Overig</h2>
+      <div class="input-group">
+        <label>Kosten performance shirt p.p. €</label>
+        <input type="number" id="shirt_kosten" value="8" step="1" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Startnummer + goodiebag p.p. €</label>
+        <input type="number" id="startnummer" value="3" step="0.5" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Prijzengeld €</label>
+        <input type="number" id="prijzengeld" value="5000" step="500" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Weeztix commissie per ticket €</label>
+        <input type="number" id="weeztix_fee" value="2.50" step="0.25" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Crew & Personeel (org)</h2>
+      <div class="input-group">
+        <label>Vrijwilligers/crew (vast, org-side)</label>
+        <input type="number" id="crew_org" value="15" step="1" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Vergoeding per crew per dag €</label>
+        <input type="number" id="crew_vergoeding" value="50" step="10" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Veerboot crew (retour p.p.) €</label>
+        <input type="number" id="crew_veerboot" value="32" step="1" oninput="calc()">
+      </div>
+    </div>
+
+  </div>
+
+  <div class="results">
+
+    <div class="result-grid">
+      <div class="stat">
+        <div class="label">Bruto Inkomsten</div>
+        <div class="value" id="r_bruto">-</div>
+        <div class="sub" id="r_bruto_pp">-</div>
+      </div>
+      <div class="stat">
+        <div class="label">Totale Kosten</div>
+        <div class="value" id="r_kosten">-</div>
+        <div class="sub" id="r_kosten_pp">-</div>
+      </div>
+      <div class="stat">
+        <div class="label">Netto Resultaat</div>
+        <div class="value" id="r_netto">-</div>
+        <div class="sub" id="r_marge">-</div>
+      </div>
+      <div class="stat">
+        <div class="label">Break-even</div>
+        <div class="value" id="r_breakeven">-</div>
+        <div class="sub">deelnemers nodig</div>
+        <div class="breakeven-bar"><div class="breakeven-fill" id="r_breakeven_bar"></div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Kostenopbouw</h2>
+      <table>
+        <thead>
+          <tr><th>Post</th><th>Type</th><th>Staffel / Toelichting</th><th class="right">Bedrag</th></tr>
+        </thead>
+        <tbody id="kosten_tabel"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Gevoeligheidsanalyse — Netto bij verschillende deelnemersaantallen</h2>
+      <table>
+        <thead>
+          <tr><th>Deelnemers</th><th class="right">Inkomsten</th><th class="right">Kosten</th><th class="right">Netto</th><th class="right">Marge</th></tr>
+        </thead>
+        <tbody id="gevoeligheid_tabel"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>EHBO Staffelvereisten</h2>
+      <table>
+        <thead>
+          <tr><th>Aanwezigen (deeln+crew)</th><th class="right">Min. EHBO'ers</th><th class="right">AED vereist</th><th class="right">EHBO-post</th><th class="right">Kosten/dag</th></tr>
+        </thead>
+        <tbody id="ehbo_tabel"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Veerboot Staffel</h2>
+      <table>
+        <thead>
+          <tr><th>Groepsgrootte</th><th class="right">Tarief p.p. (enkel)</th><th class="right">Totaal bij huidig aantal</th></tr>
+        </thead>
+        <tbody id="veerboot_tabel"></tbody>
+      </table>
+    </div>
+
+    <div class="assumptions">
+      <strong>Bronnen & aannames:</strong><br>
+      · Veertarieven: <a href="https://www.rederij-doeksen.nl/tarieven/groepstarief-voor-15-personen-of-meer" target="_blank">Rederij Doeksen groepstarieven 2026</a> (winterperiode okt, incl. 9% btw)<br>
+      · EHBO-richtlijnen: <a href="https://evenementenzorg.nl/diensten/hoeveel-ehbo-bij-evenementen/" target="_blank">Witte Kruis / Evenementenzorg</a> · <a href="https://evenementenzorg.nl/Kennisbank-EHBO-en-hulpverlening-op-evenementen-sportwedstrijden-en-festivals/ehbo-inhuren-kosten/" target="_blank">EHBO kosten</a><br>
+      · Vergunning: <a href="https://www.terschelling.nl/evenement-organiseren-vergunning-of-melding" target="_blank">Gemeente Terschelling</a> (leges €19.16, maar veiligheidsplan + omgevingsvergunning extra)<br>
+      · Ticketplatform: <a href="https://weeztix.com/nl/tarieven" target="_blank">Weeztix tarieven</a><br>
+      · Veiligheidsregio: <a href="https://www.veiligheidsregiofryslan.nl/samenwerken/hoe-organiseer-je-een-veilig-evenement/" target="_blank">Veiligheidsregio Fryslân</a><br>
+      · Sportevenement = verhoogd risicoprofiel → extra EHBO-capaciteit vereist<br>
+      · Ticketprijs €180 incl. btw → netto inkomst berekend excl. 9% btw<br>
+      · Crew-leden van deelnemers zijn niet meegenomen als inkomst (geen ticket), wel als aanwezigen voor EHBO-berekening
+    </div>
+
+  </div>
+</div>
+
+<script>
+function val(id) {
+  const el = document.getElementById(id);
+  return parseFloat(el.value) || 0;
+}
+
+function fmt(n) {
+  return '€' + n.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function fmtDec(n) {
+  return '€' + n.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getVeerbootTarief(n, type) {
+  if (type === 'snel') {
+    if (n >= 51) return 27.85;
+    if (n >= 31) return 28.97;
+    return 30.01;
+  }
+  // veerdienst winter (okt = winterperiode)
+  if (n >= 51) return 16.57;
+  if (n >= 31) return 17.69;
+  return 18.73;
+}
+
+function getEhboRequirements(aanwezigen) {
+  let ehboers, aed, post;
+  if (aanwezigen <= 50) {
+    ehboers = 0; aed = false; post = false;
+  } else if (aanwezigen <= 250) {
+    ehboers = 2; aed = true; post = false; // sport = verhoogd risico → min 2
+  } else if (aanwezigen <= 500) {
+    ehboers = Math.max(2, Math.ceil(aanwezigen / 250)); aed = true; post = false;
+  } else if (aanwezigen <= 750) {
+    ehboers = Math.max(3, Math.ceil(aanwezigen / 200)); aed = true; post = false;
+  } else if (aanwezigen <= 1000) {
+    ehboers = Math.max(4, Math.ceil(aanwezigen / 200)); aed = true; post = true;
+  } else {
+    ehboers = Math.max(5, Math.ceil(aanwezigen / 150)); aed = true; post = true;
+  }
+  // Sport met fysieke inspanning: extra 1 per 250 boven 250
+  if (aanwezigen > 250) {
+    ehboers = Math.max(ehboers, 2 + Math.ceil((aanwezigen - 250) / 250));
+  }
+  return { ehboers, aed, post };
+}
+
+function calcForN(n) {
+  const ticketprijs = val('ticketprijs');
+  const crewRatio = val('crew_ratio');
+  const ehboUur = val('ehbo_uurtarief');
+  const ehboUren = val('ehbo_uren');
+  const dagen = val('event_dagen');
+  const locatie = val('locatie_huur');
+  const materiaal = val('materiaal');
+  const vergunning = val('vergunning');
+  const verzekering = val('verzekering');
+  const shirt = val('shirt_kosten');
+  const startnummer = val('startnummer');
+  const prijzengeld = val('prijzengeld');
+  const weeztix = val('weeztix_fee');
+  const crewOrg = val('crew_org');
+  const crewVerg = val('crew_vergoeding');
+  const crewVeerboot = val('crew_veerboot');
+  const veerType = document.getElementById('veerboot_type').value;
+
+  const nettoTicket = ticketprijs / 1.09;
+  const bruto = n * nettoTicket;
+
+  const crewDeeln = Math.round(n * crewRatio);
+  const aanwezigen = n + crewDeeln;
+
+  // Veerboot deelnemers (alleen heen)
+  const veerTarief = getVeerbootTarief(n, veerType);
+  const kostenVeerboot = n * veerTarief;
+
+  // EHBO
+  const ehbo = getEhboRequirements(aanwezigen);
+  const kostenEhbo = ehbo.ehboers * ehboUur * ehboUren * dagen;
+  const kostenAed = ehbo.aed ? 50 * dagen : 0; // AED huur
+  const kostenEhboPost = ehbo.post ? 200 * dagen : 0;
+
+  // Per deelnemer
+  const kostenShirts = n * shirt;
+  const kostenStartnr = n * startnummer;
+  const kostenWeeztix = n * weeztix;
+
+  // Crew org
+  const kostenCrewVerg = crewOrg * crewVerg * dagen;
+  const kostenCrewVeer = crewOrg * crewVeerboot;
+
+  // Vast
+  const kostenVast = locatie + materiaal + vergunning + verzekering + prijzengeld;
+
+  const totaalKosten = kostenVeerboot + kostenEhbo + kostenAed + kostenEhboPost +
+    kostenShirts + kostenStartnr + kostenWeeztix + kostenCrewVerg + kostenCrewVeer + kostenVast;
+
+  return {
+    bruto, totaalKosten,
+    netto: bruto - totaalKosten,
+    marge: bruto > 0 ? ((bruto - totaalKosten) / bruto * 100) : 0,
+    nettoTicket, veerTarief, crewDeeln, aanwezigen, ehbo,
+    kostenVeerboot, kostenEhbo, kostenAed, kostenEhboPost,
+    kostenShirts, kostenStartnr, kostenWeeztix,
+    kostenCrewVerg, kostenCrewVeer, kostenVast,
+    locatie, materiaal, vergunning, verzekering, prijzengeld, dagen
+  };
+}
+
+function calc() {
+  const n = val('deelnemers');
+  document.getElementById('v_deelnemers').textContent = n;
+
+  const r = calcForN(n);
+
+  document.getElementById('r_bruto').textContent = fmt(r.bruto);
+  document.getElementById('r_bruto_pp').textContent = fmtDec(r.nettoTicket) + ' netto p.p.';
+  document.getElementById('r_kosten').textContent = fmt(r.totaalKosten);
+  document.getElementById('r_kosten_pp').textContent = fmtDec(r.totaalKosten / n) + ' p.p.';
+
+  const nettoEl = document.getElementById('r_netto');
+  nettoEl.textContent = fmt(r.netto);
+  nettoEl.className = 'value ' + (r.netto >= 0 ? 'positive' : 'negative');
+  document.getElementById('r_marge').textContent = r.marge.toFixed(1) + '% marge';
+
+  // Break-even calculation
+  let be = 50;
+  while (be <= 750) {
+    const test = calcForN(be);
+    if (test.netto >= 0) break;
+    be += 5;
+  }
+  document.getElementById('r_breakeven').textContent = be;
+  const barPct = Math.min(100, (n / be) * 100);
+  const bar = document.getElementById('r_breakeven_bar');
+  bar.style.width = barPct + '%';
+  bar.style.background = n >= be ? 'var(--green)' : 'var(--red)';
+
+  // EHBO staffel info
+  document.getElementById('ehbo_staffel_info').innerHTML =
+    `<strong>Bij ${n} deelnemers + ~${r.crewDeeln} crew = ${r.aanwezigen} aanwezigen:</strong><br>` +
+    `Min. ${r.ehbo.ehboers} EHBO'ers · AED: ${r.ehbo.aed ? 'ja' : 'nee'} · Post: ${r.ehbo.post ? 'ja' : 'nee'}<br>` +
+    `→ ${fmt(r.kostenEhbo + r.kostenAed + r.kostenEhboPost)} totaal (${r.dagen} dagen × ${val('ehbo_uren')}u)`;
+
+  // Kosten tabel
+  const rows = [
+    ['Veerboot deelnemers (heen)', 'Variabel', `${n} × ${fmtDec(r.veerTarief)} (staffel 51+/31-50/15-30)`, r.kostenVeerboot],
+    ['EHBO team', 'Staffel', `${r.ehbo.ehboers} pers × ${val('ehbo_uren')}u × ${r.dagen}d × ${fmtDec(val('ehbo_uurtarief'))}`, r.kostenEhbo],
+    ['AED huur', 'Staffel', r.ehbo.aed ? `${r.dagen} dagen` : 'Niet vereist', r.kostenAed],
+    ['EHBO-post', 'Staffel', r.ehbo.post ? `${r.dagen} dagen (750+ aanwezigen)` : 'Niet vereist (<750)', r.kostenEhboPost],
+    ['Performance shirts', 'Variabel', `${n} × ${fmtDec(val('shirt_kosten'))}`, r.kostenShirts],
+    ['Startnummer + goodiebag', 'Variabel', `${n} × ${fmtDec(val('startnummer'))}`, r.kostenStartnr],
+    ['Weeztix commissie', 'Variabel', `${n} × ${fmtDec(val('weeztix_fee'))}`, r.kostenWeeztix],
+    ['__sub', 'Variabele kosten', '', r.kostenVeerboot + r.kostenEhbo + r.kostenAed + r.kostenEhboPost + r.kostenShirts + r.kostenStartnr + r.kostenWeeztix],
+    ['Locatiehuur MooiWeer', 'Vast', `${r.dagen}+ dagen`, r.locatie],
+    ['Materiaal & infra', 'Vast', 'Hekken, timing, bewegwijzering', r.materiaal],
+    ['Vergunning & leges', 'Vast', 'Gemeente + omgevingsvergunning', r.vergunning],
+    ['Verzekering', 'Vast', 'Evenementenverzekering', r.verzekering],
+    ['Prijzengeld', 'Vast', '', r.prijzengeld],
+    ['Crew vergoeding', 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_vergoeding'))} × ${r.dagen}d`, r.kostenCrewVerg],
+    ['Crew veerboot', 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_veerboot'))} retour`, r.kostenCrewVeer],
+    ['__sub', 'Vaste kosten', '', r.kostenVast + r.kostenCrewVerg + r.kostenCrewVeer],
+    ['__total', '', '', r.totaalKosten],
+  ];
+
+  let html = '';
+  rows.forEach(([naam, type, toel, bedrag]) => {
+    if (naam === '__sub') {
+      html += `<tr class="row-subtotal"><td colspan="3">${type}</td><td class="right">${fmt(bedrag)}</td></tr>`;
+    } else if (naam === '__total') {
+      html += `<tr class="row-total"><td colspan="3">Totale kosten</td><td class="right">${fmt(bedrag)}</td></tr>`;
+    } else {
+      html += `<tr><td>${naam}</td><td>${type}</td><td>${toel}</td><td class="right">${fmt(bedrag)}</td></tr>`;
+    }
+  });
+  document.getElementById('kosten_tabel').innerHTML = html;
+
+  // Gevoeligheid
+  const scenarios = [50, 100, 150, 200, 250, 300, 350, 400, 500, 750];
+  html = '';
+  scenarios.forEach(sn => {
+    const sr = calcForN(sn);
+    const cls = sr.netto >= 0 ? 'positive' : 'negative';
+    const isCurrent = sn === n;
+    html += `<tr${isCurrent ? ' style="background:var(--surface2)"' : ''}>` +
+      `<td>${sn}${isCurrent ? ' ◄' : ''}</td>` +
+      `<td class="right">${fmt(sr.bruto)}</td>` +
+      `<td class="right">${fmt(sr.totaalKosten)}</td>` +
+      `<td class="right ${cls}">${fmt(sr.netto)}</td>` +
+      `<td class="right ${cls}">${sr.marge.toFixed(1)}%</td></tr>`;
+  });
+  document.getElementById('gevoeligheid_tabel').innerHTML = html;
+
+  // EHBO staffel tabel
+  const ehboLevels = [50, 100, 200, 300, 500, 750, 1000, 1500];
+  html = '';
+  ehboLevels.forEach(a => {
+    const e = getEhboRequirements(a);
+    const dagKosten = e.ehboers * val('ehbo_uurtarief') * val('ehbo_uren') + (e.aed ? 50 : 0) + (e.post ? 200 : 0);
+    const isCurrent = a === r.aanwezigen;
+    html += `<tr${isCurrent ? ' style="background:var(--surface2)"' : ''}>` +
+      `<td>${a}${isCurrent ? ' ◄' : ''}</td>` +
+      `<td class="right">${e.ehboers}</td>` +
+      `<td class="right">${e.aed ? 'Ja' : 'Nee'}</td>` +
+      `<td class="right">${e.post ? 'Ja' : 'Nee'}</td>` +
+      `<td class="right">${fmt(dagKosten)}</td></tr>`;
+  });
+  document.getElementById('ehbo_tabel').innerHTML = html;
+
+  // Veerboot staffel tabel
+  const veerType = document.getElementById('veerboot_type').value;
+  const veerStaffels = [
+    { label: '15-30 personen', tarief: getVeerbootTarief(20, veerType) },
+    { label: '31-50 personen', tarief: getVeerbootTarief(40, veerType) },
+    { label: '51+ personen', tarief: getVeerbootTarief(100, veerType) },
+  ];
+  html = '';
+  veerStaffels.forEach(s => {
+    html += `<tr><td>${s.label}</td><td class="right">${fmtDec(s.tarief)}</td>` +
+      `<td class="right">${fmt(n * s.tarief)}</td></tr>`;
+  });
+  // highlight current
+  html += `<tr class="row-subtotal"><td>Huidig (${n} pers, 51+)</td><td class="right">${fmtDec(r.veerTarief)}</td>` +
+    `<td class="right">${fmt(r.kostenVeerboot)}</td></tr>`;
+  document.getElementById('veerboot_tabel').innerHTML = html;
+}
+
+function setScenario(name) {
+  const el = document.getElementById('deelnemers');
+  const scenarios = { klein: 100, middel: 200, groot: 350, uitverkocht: 500 };
+  el.value = scenarios[name];
+  calc();
+}
+
+calc();
+</script>
+</body>
+</html>
