@@ -295,17 +295,30 @@
     <div class="panel">
       <h2>Yards Model (uitvalpatroon)</h2>
       <div class="input-group">
-        <label>Uitval per yard (%): <span class="slider-value" id="v_attrition">15</span>%</label>
-        <input type="range" id="attrition" min="5" max="40" step="1" value="15" oninput="calc()">
+        <label>Veld % — niveau ≤ halve marathon</label>
+        <input type="number" id="pct_halve" value="25" step="5" min="0" max="100" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Hardcore runners (overleven 20+ yards)</label>
-        <input type="number" id="hardcore" value="10" step="1" min="0" oninput="calc()">
+        <label>Veld % — niveau marathon (6u)</label>
+        <input type="number" id="pct_marathon" value="30" step="5" min="0" max="100" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Max yards hardcore</label>
-        <input type="number" id="hardcore_max" value="35" step="1" min="20" oninput="calc()">
+        <label>Veld % — niveau ultra 100k (15u)</label>
+        <input type="number" id="pct_100k" value="25" step="5" min="0" max="100" oninput="calc()">
       </div>
+      <div class="input-group">
+        <label>Veld % — niveau 24u</label>
+        <input type="number" id="pct_24u" value="12" step="1" min="0" max="100" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Veld % — niveau 200k+ (30u)</label>
+        <input type="number" id="pct_200k" value="6" step="1" min="0" max="100" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Hardcore (laatste 2, extra 5 rondes)</label>
+        <input type="number" id="pct_hardcore" value="2" step="1" min="0" max="100" oninput="calc()">
+      </div>
+      <div class="staffel-info" id="yards_pct_total"></div>
       <div class="staffel-info" id="yards_info"></div>
     </div>
 
@@ -518,31 +531,90 @@ function calcForN(n) {
   const nettoTicket = ticketprijs / 1.09;
   const ticketInkomsten = n * nettoTicket;
 
-  // Yards model
-  const attritionRate = val('attrition') / 100;
-  const hardcore = Math.min(val('hardcore'), n);
-  const hardcoreMax = val('hardcore_max');
-  const normalRunners = n - hardcore;
+  // Yards model — getrapte uitvalcurve
+  // Groepen met hun drempeluur (yard waarop ze uitvallen)
+  // Uitval is gespreid: begint 2 yards voor drempel, piek op drempel
+  const pctHalve = val('pct_halve');
+  const pctMarathon = val('pct_marathon');
+  const pct100k = val('pct_100k');
+  const pct24u = val('pct_24u');
+  const pct200k = val('pct_200k');
+  const pctHardcore = val('pct_hardcore');
+  const pctTotal = pctHalve + pctMarathon + pct100k + pct24u + pct200k + pctHardcore;
 
+  // Normaliseer naar 100% als het niet klopt
+  const norm = pctTotal > 0 ? 100 / pctTotal : 1;
+  const groups = [
+    // [drempelYard, count] — druppelsgewijs uitval rond deze yard
+    { peak: 3,  count: Math.round(n * pctHalve * norm / 100), label: '≤halve' },
+    { peak: 6,  count: Math.round(n * pctMarathon * norm / 100), label: 'marathon' },
+    { peak: 15, count: Math.round(n * pct100k * norm / 100), label: '100k' },
+    { peak: 24, count: Math.round(n * pct24u * norm / 100), label: '24u' },
+    { peak: 30, count: Math.round(n * pct200k * norm / 100), label: '200k' },
+  ];
+  const hardcoreCount = Math.max(2, n - groups.reduce((s, g) => s + g.count, 0));
+
+  // Build per-yard dropout schedule
+  // Each group: 1-2 dropouts starting 2 yards before peak, bulk at peak, stragglers 1 after
+  const maxYard = 45;
+  const dropouts = new Array(maxYard + 1).fill(0);
+
+  groups.forEach(g => {
+    if (g.count <= 0) return;
+    const early1 = Math.max(1, g.peak - 2);
+    const early2 = Math.max(1, g.peak - 1);
+    const after = g.peak + 1;
+    // Spread: 10% at peak-2, 15% at peak-1, 50% at peak, 25% at peak+1
+    const d1 = Math.round(g.count * 0.10);
+    const d2 = Math.round(g.count * 0.15);
+    const d4 = Math.round(g.count * 0.25);
+    const d3 = g.count - d1 - d2 - d4;
+    if (early1 < g.peak) dropouts[early1] += d1;
+    if (early2 < g.peak) dropouts[early2] += d2;
+    dropouts[g.peak] += d3;
+    if (after <= maxYard) dropouts[after] += d4;
+  });
+
+  // Simulate
   let totalYards = 0;
-  let remaining = normalRunners;
+  let active = n;
   let yardBreakdown = [];
-  let yard = 1;
-  while (remaining > 0.5) {
-    const active = Math.round(remaining) + (yard <= hardcoreMax ? hardcore : 0);
+  let lastActiveYard = 0;
+
+  for (let y = 1; y <= maxYard && active > 0; y++) {
     totalYards += active;
-    yardBreakdown.push({ yard, active, remaining: Math.round(remaining) });
-    remaining = remaining * (1 - attritionRate);
-    yard++;
+    yardBreakdown.push({ yard: y, active, dropout: dropouts[y] || 0 });
+    lastActiveYard = y;
+
+    // Hardcore: no dropout after their group peers are gone, until final 5 rounds
+    if (active <= hardcoreCount && active > 2) {
+      // 10 yards of no attrition, then sudden end
+      const hardcoreStart = y;
+      for (let hy = y + 1; hy <= y + 10 && active > 2; hy++) {
+        totalYards += active;
+        yardBreakdown.push({ yard: hy, active, dropout: 0 });
+        lastActiveYard = hy;
+      }
+      // Final 5 rounds: drop to 2, then finish
+      const finalStart = lastActiveYard + 1;
+      active = 2;
+      for (let fy = finalStart; fy < finalStart + 5; fy++) {
+        totalYards += active;
+        yardBreakdown.push({ yard: fy, active, dropout: 0 });
+        lastActiveYard = fy;
+      }
+      // Final yard: winner
+      totalYards += 1;
+      yardBreakdown.push({ yard: lastActiveYard + 1, active: 1, dropout: 1 });
+      lastActiveYard++;
+      active = 0;
+      break;
+    }
+
+    active = Math.max(0, active - (dropouts[y] || 0));
   }
-  // Hardcore runners continue after normal runners are gone
-  for (let y = yard; y <= hardcoreMax; y++) {
-    const left = Math.max(2, Math.round(hardcore * (1 - (y - yard) / (hardcoreMax - yard + 1))));
-    totalYards += left;
-    yardBreakdown.push({ yard: y, active: left, remaining: 0 });
-    if (left <= 2) { totalYards += 2; yardBreakdown.push({ yard: y + 1, active: 2, remaining: 0 }); break; }
-  }
-  const lastYard = yardBreakdown.length > 0 ? yardBreakdown[yardBreakdown.length - 1].yard : 0;
+
+  const lastYard = lastActiveYard;
   const avgYardsPerRunner = n > 0 ? totalYards / n : 0;
 
   // Extra inkomsten (per yard)
@@ -618,7 +690,12 @@ function calc() {
   document.getElementById('r_marge').textContent = r.marge.toFixed(1) + '% marge';
 
   // Yards
-  document.getElementById('v_attrition').textContent = val('attrition');
+  const pctSum = val('pct_halve') + val('pct_marathon') + val('pct_100k') + val('pct_24u') + val('pct_200k') + val('pct_hardcore');
+  const pctEl = document.getElementById('yards_pct_total');
+  pctEl.innerHTML = pctSum === 100
+    ? `<strong>Veldverdeling: ${pctSum}%</strong> ✓`
+    : `<strong style="color:var(--orange)">Veldverdeling: ${pctSum}%</strong> (wordt genormaliseerd naar 100%)`;
+
   document.getElementById('r_yards').textContent = r.totalYards.toLocaleString('nl-NL');
   document.getElementById('r_yards_sub').textContent = `${r.lastYard} rondes · gem. ${r.avgYardsPerRunner.toFixed(1)} p.p.`;
   document.getElementById('yards_info').innerHTML =
@@ -716,13 +793,11 @@ function calc() {
   // Yards verloop tabel
   html = '';
   let cumYards = 0;
-  r.yardBreakdown.forEach((y, i) => {
-    const prev = i > 0 ? r.yardBreakdown[i - 1].active : n;
-    const uitval = i === 0 ? n - y.active : prev - y.active;
+  r.yardBreakdown.forEach((y) => {
     cumYards += y.active;
     html += `<tr><td>${y.yard}</td>` +
       `<td class="right">${y.active}</td>` +
-      `<td class="right">${uitval > 0 ? '-' + uitval : ''}</td>` +
+      `<td class="right">${y.dropout > 0 ? '-' + y.dropout : ''}</td>` +
       `<td class="right">${cumYards.toLocaleString('nl-NL')}</td></tr>`;
   });
   html += `<tr class="row-total"><td>Totaal</td><td></td><td></td><td class="right">${r.totalYards.toLocaleString('nl-NL')}</td></tr>`;
