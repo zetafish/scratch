@@ -284,10 +284,6 @@
         <label>EHBO uren per dag (niet 24u, shifts)</label>
         <input type="number" id="ehbo_uren" value="16" step="1" oninput="calc()">
       </div>
-      <div class="input-group">
-        <label>Op/afbouw dagen (extra naast loopdagen)</label>
-        <input type="number" id="extra_dagen" value="1" step="1" min="0" max="3" oninput="calc()">
-      </div>
       <div class="staffel-info" id="ehbo_staffel_info"></div>
     </div>
 
@@ -352,6 +348,10 @@
       <div class="input-group">
         <label>Crewkleding per persoon €</label>
         <input type="number" id="crew_kleding" value="20" step="5" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Op/afbouw dagen (extra naast loopdagen)</label>
+        <input type="number" id="extra_dagen" value="1" step="1" min="0" max="3" oninput="calc()">
       </div>
       <div class="staffel-info" id="crew_totaal_info"></div>
     </div>
