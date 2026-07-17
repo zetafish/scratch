@@ -5,7 +5,9 @@
       "WebFetch(domain:www.vvvterschelling.nl)",
       "WebSearch",
       "WebFetch(domain:www.rederij-doeksen.nl)",
-      "WebFetch(domain:www.veiligheidsregiofryslan.nl)"
+      "WebFetch(domain:www.veiligheidsregiofryslan.nl)",
+      "Bash(open *)",
+      "WebFetch(domain:statistik.d-u-v.org)"
     ]
   }
 }
