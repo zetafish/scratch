@@ -1,0 +1,7 @@
+node_modules/
+resources/public/js/
+.shadow-cljs/
+.cpcache/
+.clj-kondo/
+.lsp/
+.nrepl-port

@@ -1,0 +1,167 @@
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242836;
+  --border: #2e3347;
+  --text: #e4e6f0;
+  --text-dim: #8b8fa8;
+  --accent: #6c8cff;
+  --green: #4ade80;
+  --red: #f87171;
+  --orange: #fbbf24;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  padding: 2rem;
+}
+h1 { font-size: 1.5rem; margin-bottom: .25rem; }
+.subtitle { color: var(--text-dim); margin-bottom: 2rem; font-size: .9rem; }
+.grid { display: grid; grid-template-columns: 340px 1fr; gap: 2rem; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.panel h2 {
+  font-size: .85rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+}
+
+.input-group { margin-bottom: .75rem; }
+.input-group label {
+  display: block;
+  font-size: .8rem;
+  color: var(--text-dim);
+  margin-bottom: .25rem;
+}
+.input-group input, .input-group select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: .5rem .75rem;
+  border-radius: 8px;
+  font-size: .9rem;
+}
+.input-group input:focus, .input-group select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .5rem;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+.stat .label { font-size: .75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+.stat .value { font-size: 1.6rem; font-weight: 700; margin-top: .25rem; }
+.stat .sub { font-size: .8rem; color: var(--text-dim); margin-top: .15rem; }
+.positive { color: var(--green); }
+.negative { color: var(--red); }
+.warning { color: var(--orange); }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .85rem;
+}
+th {
+  text-align: left;
+  color: var(--text-dim);
+  font-weight: 500;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--border);
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+td {
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--border);
+}
+tr:last-child td { border-bottom: none; }
+.right { text-align: right; }
+.row-total td { font-weight: 700; border-top: 2px solid var(--border); }
+.row-subtotal td { font-weight: 600; color: var(--accent); }
+
+.staffel-info {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: .75rem 1rem;
+  margin-top: .75rem;
+  font-size: .8rem;
+  color: var(--text-dim);
+}
+.staffel-info strong { color: var(--text); }
+
+.slider-value {
+  display: inline-block;
+  min-width: 3em;
+  text-align: right;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.assumptions {
+  font-size: .8rem;
+  color: var(--text-dim);
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.assumptions a { color: var(--accent); }
+
+.scenario-btns {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: 1rem;
+}
+.scenario-btns button {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: .4rem .75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: .8rem;
+}
+.scenario-btns button:hover { border-color: var(--accent); }
+.scenario-btns.compact button { padding: .25rem .5rem; font-size: .75rem; }
+.scenario-btns button.active { background: var(--accent); color: #111; border-color: var(--accent); }
+
+.breakeven-bar {
+  height: 8px;
+  background: var(--surface2);
+  border-radius: 4px;
+  margin-top: .5rem;
+  overflow: hidden;
+  position: relative;
+}
+.breakeven-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width .3s;
+}
