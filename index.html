@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Last Man Standing Terschelling — Financieel Model</title>
+<title>Evenement — Financieel Model</title>
 <style>
   :root {
     --bg: #0f1117;
@@ -174,8 +174,8 @@
 </head>
 <body>
 
-<h1>Last Man Standing Terschelling — Financieel Model</h1>
-<p class="subtitle">Organisatorperspectief · Oktober 2026 · Alle bedragen excl. btw tenzij anders vermeld</p>
+<h1 id="page_title"></h1>
+<p class="subtitle" id="page_subtitle"></p>
 
 <div class="scenario-btns">
   <button onclick="setScenario('klein')">Klein (100)</button>
@@ -198,22 +198,22 @@
         <input type="number" id="ticketprijs" value="180" step="5" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Crew-leden per deelnemer (max 2)</label>
+        <label>Support crew per deelnemer (max 2, eigen rekening)</label>
         <input type="number" id="crew_ratio" value="0.5" step="0.1" min="0" max="2" oninput="calc()">
       </div>
     </div>
 
     <div class="panel">
-      <h2>Veerboot (Doeksen groepstarief)</h2>
+      <h2 id="h_veerboot"></h2>
       <div class="input-group">
         <label>Dienst</label>
         <select id="veerboot_type" onchange="calc()">
-          <option value="veer_winter">Veerdienst (winter/okt: €16.57-18.73 enkel p.p.)</option>
-          <option value="snel">Sneldienst (€27.85-30.01 enkel p.p.)</option>
+          <option value="veer_winter" id="opt_veer">Veerdienst (winter/okt: €16.57-18.73 enkel p.p.)</option>
+          <option value="snel" id="opt_snel">Sneldienst (€27.85-30.01 enkel p.p.)</option>
         </select>
       </div>
       <div class="staffel-info">
-        <strong>Staffel veerdienst (enkel, winter):</strong><br>
+        <strong id="staffel_veer_label"></strong><br>
         15-30 pers: €18.73 · 31-50: €17.69 · 51+: €16.57<br>
         <em>Alleen heenreis deelnemers vergoed door org.</em>
       </div>
@@ -239,7 +239,7 @@
     <div class="panel">
       <h2>Locatie & Logistiek</h2>
       <div class="input-group">
-        <label>Locatiehuur MooiWeer (totaal) €</label>
+        <label id="lbl_locatie"></label>
         <input type="number" id="locatie_huur" value="3000" step="250" oninput="calc()">
       </div>
       <div class="input-group">
@@ -271,23 +271,23 @@
         <input type="number" id="prijzengeld" value="5000" step="500" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Weeztix commissie per ticket €</label>
+        <label id="lbl_ticketplatform"></label>
         <input type="number" id="weeztix_fee" value="2.50" step="0.25" oninput="calc()">
       </div>
     </div>
 
     <div class="panel">
-      <h2>Crew & Personeel (org)</h2>
+      <h2>Organisatie Crew</h2>
       <div class="input-group">
-        <label>Vrijwilligers/crew (vast, org-side)</label>
+        <label>Aantal org crew</label>
         <input type="number" id="crew_org" value="15" step="1" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Vergoeding per crew per dag €</label>
+        <label>Vergoeding per org crew per dag €</label>
         <input type="number" id="crew_vergoeding" value="50" step="10" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Veerboot crew (retour p.p.) €</label>
+        <label id="lbl_crew_veerboot"></label>
         <input type="number" id="crew_veerboot" value="32" step="1" oninput="calc()">
       </div>
     </div>
@@ -344,7 +344,7 @@
       <h2>EHBO Staffelvereisten</h2>
       <table>
         <thead>
-          <tr><th>Aanwezigen (deeln+crew)</th><th class="right">Min. EHBO'ers</th><th class="right">AED vereist</th><th class="right">EHBO-post</th><th class="right">Kosten/dag</th></tr>
+          <tr><th>Aanwezigen (deeln+support crew)</th><th class="right">Min. EHBO'ers</th><th class="right">AED vereist</th><th class="right">EHBO-post</th><th class="right">Kosten/dag</th></tr>
         </thead>
         <tbody id="ehbo_tabel"></tbody>
       </table>
@@ -361,21 +361,32 @@
     </div>
 
     <div class="assumptions">
-      <strong>Bronnen & aannames:</strong><br>
-      · Veertarieven: <a href="https://www.rederij-doeksen.nl/tarieven/groepstarief-voor-15-personen-of-meer" target="_blank">Rederij Doeksen groepstarieven 2026</a> (winterperiode okt, incl. 9% btw)<br>
-      · EHBO-richtlijnen: <a href="https://evenementenzorg.nl/diensten/hoeveel-ehbo-bij-evenementen/" target="_blank">Witte Kruis / Evenementenzorg</a> · <a href="https://evenementenzorg.nl/Kennisbank-EHBO-en-hulpverlening-op-evenementen-sportwedstrijden-en-festivals/ehbo-inhuren-kosten/" target="_blank">EHBO kosten</a><br>
-      · Vergunning: <a href="https://www.terschelling.nl/evenement-organiseren-vergunning-of-melding" target="_blank">Gemeente Terschelling</a> (leges €19.16, maar veiligheidsplan + omgevingsvergunning extra)<br>
-      · Ticketplatform: <a href="https://weeztix.com/nl/tarieven" target="_blank">Weeztix tarieven</a><br>
-      · Veiligheidsregio: <a href="https://www.veiligheidsregiofryslan.nl/samenwerken/hoe-organiseer-je-een-veilig-evenement/" target="_blank">Veiligheidsregio Fryslân</a><br>
+      <strong>Aannames:</strong><br>
+      · Veertarieven: groepstarieven veerdienst 2026 (winterperiode okt, incl. 9% btw)<br>
+      · EHBO-richtlijnen: landelijke richtlijnen evenementenzorg + Veldnorm Evenementenzorg (VNEZ)<br>
+      · Vergunning: gemeentelijke leges + veiligheidsplan + omgevingsvergunning<br>
       · Sportevenement = verhoogd risicoprofiel → extra EHBO-capaciteit vereist<br>
-      · Ticketprijs €180 incl. btw → netto inkomst berekend excl. 9% btw<br>
-      · Crew-leden van deelnemers zijn niet meegenomen als inkomst (geen ticket), wel als aanwezigen voor EHBO-berekening
+      · Ticketprijs incl. btw → netto inkomst berekend excl. 9% btw<br>
+      · Support crew (van deelnemers) niet meegenomen als inkomst (eigen rekening), wel als aanwezigen voor EHBO-berekening<br>
+      · Org crew kosten (vergoeding + veerboot) zijn vaste kosten voor de organisatie
     </div>
 
   </div>
 </div>
 
 <script>
+const CFG = {
+  eventNaam: 'Can you Stand It?',
+  locatie: 'Eiland X',
+  basecamp: 'Locatie BC',
+  rederij: 'Veerdienst',
+  ticketPlatform: 'Ticketplatform',
+  veiligheidsregio: 'Veiligheidsregio',
+  gemeente: 'Gemeente Eiland',
+  organisator: 'Organisator',
+  maand: 'Oktober 2026',
+};
+
 function val(id) {
   const el = document.getElementById(id);
   return parseFloat(el.value) || 0;
@@ -516,27 +527,27 @@ function calc() {
 
   // EHBO staffel info
   document.getElementById('ehbo_staffel_info').innerHTML =
-    `<strong>Bij ${n} deelnemers + ~${r.crewDeeln} crew = ${r.aanwezigen} aanwezigen:</strong><br>` +
+    `<strong>Bij ${n} deelnemers + ~${r.crewDeeln} support crew = ${r.aanwezigen} aanwezigen:</strong><br>` +
     `Min. ${r.ehbo.ehboers} EHBO'ers · AED: ${r.ehbo.aed ? 'ja' : 'nee'} · Post: ${r.ehbo.post ? 'ja' : 'nee'}<br>` +
     `→ ${fmt(r.kostenEhbo + r.kostenAed + r.kostenEhboPost)} totaal (${r.dagen} dagen × ${val('ehbo_uren')}u)`;
 
   // Kosten tabel
   const rows = [
-    ['Veerboot deelnemers (heen)', 'Variabel', `${n} × ${fmtDec(r.veerTarief)} (staffel 51+/31-50/15-30)`, r.kostenVeerboot],
+    [`${CFG.rederij} deelnemers (heen)`, 'Variabel', `${n} × ${fmtDec(r.veerTarief)} (staffel 51+/31-50/15-30)`, r.kostenVeerboot],
     ['EHBO team', 'Staffel', `${r.ehbo.ehboers} pers × ${val('ehbo_uren')}u × ${r.dagen}d × ${fmtDec(val('ehbo_uurtarief'))}`, r.kostenEhbo],
     ['AED huur', 'Staffel', r.ehbo.aed ? `${r.dagen} dagen` : 'Niet vereist', r.kostenAed],
     ['EHBO-post', 'Staffel', r.ehbo.post ? `${r.dagen} dagen (750+ aanwezigen)` : 'Niet vereist (<750)', r.kostenEhboPost],
     ['Performance shirts', 'Variabel', `${n} × ${fmtDec(val('shirt_kosten'))}`, r.kostenShirts],
     ['Startnummer + goodiebag', 'Variabel', `${n} × ${fmtDec(val('startnummer'))}`, r.kostenStartnr],
-    ['Weeztix commissie', 'Variabel', `${n} × ${fmtDec(val('weeztix_fee'))}`, r.kostenWeeztix],
+    [`${CFG.ticketPlatform} commissie`, 'Variabel', `${n} × ${fmtDec(val('weeztix_fee'))}`, r.kostenWeeztix],
     ['__sub', 'Variabele kosten', '', r.kostenVeerboot + r.kostenEhbo + r.kostenAed + r.kostenEhboPost + r.kostenShirts + r.kostenStartnr + r.kostenWeeztix],
-    ['Locatiehuur MooiWeer', 'Vast', `${r.dagen}+ dagen`, r.locatie],
+    [`Locatiehuur ${CFG.basecamp}`, 'Vast', `${r.dagen}+ dagen`, r.locatie],
     ['Materiaal & infra', 'Vast', 'Hekken, timing, bewegwijzering', r.materiaal],
-    ['Vergunning & leges', 'Vast', 'Gemeente + omgevingsvergunning', r.vergunning],
+    ['Vergunning & leges', 'Vast', `${CFG.gemeente} + omgevingsvergunning`, r.vergunning],
     ['Verzekering', 'Vast', 'Evenementenverzekering', r.verzekering],
     ['Prijzengeld', 'Vast', '', r.prijzengeld],
-    ['Crew vergoeding', 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_vergoeding'))} × ${r.dagen}d`, r.kostenCrewVerg],
-    ['Crew veerboot', 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_veerboot'))} retour`, r.kostenCrewVeer],
+    ['Org crew vergoeding', 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_vergoeding'))} × ${r.dagen}d`, r.kostenCrewVerg],
+    [`Org crew ${CFG.rederij}`, 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_veerboot'))} retour`, r.kostenCrewVeer],
     ['__sub', 'Vaste kosten', '', r.kostenVast + r.kostenCrewVerg + r.kostenCrewVeer],
     ['__total', '', '', r.totaalKosten],
   ];
@@ -610,6 +621,19 @@ function setScenario(name) {
   calc();
 }
 
+function initLabels() {
+  document.getElementById('page_title').textContent = `${CFG.eventNaam} ${CFG.locatie} — Financieel Model`;
+  document.getElementById('page_subtitle').textContent = `Organisatorperspectief · ${CFG.maand} · Alle bedragen excl. btw tenzij anders vermeld`;
+  document.getElementById('h_veerboot').textContent = `${CFG.rederij} (groepstarief)`;
+  document.getElementById('opt_veer').textContent = `${CFG.rederij} veerdienst (winter/okt: €16.57-18.73 enkel p.p.)`;
+  document.getElementById('opt_snel').textContent = `${CFG.rederij} sneldienst (€27.85-30.01 enkel p.p.)`;
+  document.getElementById('staffel_veer_label').textContent = `Staffel ${CFG.rederij} (enkel, winter):`;
+  document.getElementById('lbl_locatie').textContent = `Locatiehuur ${CFG.basecamp} (totaal) €`;
+  document.getElementById('lbl_ticketplatform').textContent = `${CFG.ticketPlatform} commissie per ticket €`;
+  document.getElementById('lbl_crew_veerboot').textContent = `${CFG.rederij} org crew (retour p.p.) €`;
+}
+
+initLabels();
 calc();
 </script>
 </body>
