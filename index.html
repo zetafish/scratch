@@ -292,6 +292,47 @@
       </div>
     </div>
 
+    <div class="panel">
+      <h2>Yards Model (uitvalpatroon)</h2>
+      <div class="input-group">
+        <label>Uitval per yard (%): <span class="slider-value" id="v_attrition">15</span>%</label>
+        <input type="range" id="attrition" min="5" max="40" step="1" value="15" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Hardcore runners (overleven 20+ yards)</label>
+        <input type="number" id="hardcore" value="10" step="1" min="0" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Max yards hardcore</label>
+        <input type="number" id="hardcore_max" value="35" step="1" min="20" oninput="calc()">
+      </div>
+      <div class="staffel-info" id="yards_info"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Extra Inkomsten</h2>
+      <div class="input-group">
+        <label>Foodtruck omzet per yard €</label>
+        <input type="number" id="foodtruck_per_yard" value="3" step="0.5" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Foodtruck % omzet afdracht</label>
+        <input type="number" id="foodtruck_pct" value="10" step="1" min="0" max="50" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Shop omzet per yard €</label>
+        <input type="number" id="shop_per_yard" value="1.5" step="0.5" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Shop netto marge %</label>
+        <input type="number" id="shop_marge_pct" value="40" step="5" min="0" max="100" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Overige sponsoring / partnerships €</label>
+        <input type="number" id="sponsoring" value="0" step="500" oninput="calc()">
+      </div>
+    </div>
+
   </div>
 
   <div class="results">
@@ -313,6 +354,11 @@
         <div class="sub" id="r_marge">-</div>
       </div>
       <div class="stat">
+        <div class="label">Totale Yards</div>
+        <div class="value" id="r_yards">-</div>
+        <div class="sub" id="r_yards_sub">-</div>
+      </div>
+      <div class="stat">
         <div class="label">Break-even</div>
         <div class="value" id="r_breakeven">-</div>
         <div class="sub">deelnemers nodig</div>
@@ -321,8 +367,14 @@
     </div>
 
     <div class="panel">
-      <h2>Kostenopbouw</h2>
+      <h2>Inkomsten & Kostenopbouw</h2>
       <table>
+        <thead>
+          <tr><th>Post</th><th>Type</th><th>Toelichting</th><th class="right">Bedrag</th></tr>
+        </thead>
+        <tbody id="inkomsten_tabel"></tbody>
+      </table>
+      <table style="margin-top: 1rem">
         <thead>
           <tr><th>Post</th><th>Type</th><th>Staffel / Toelichting</th><th class="right">Bedrag</th></tr>
         </thead>
@@ -337,6 +389,16 @@
           <tr><th>Deelnemers</th><th class="right">Inkomsten</th><th class="right">Kosten</th><th class="right">Netto</th><th class="right">Marge</th></tr>
         </thead>
         <tbody id="gevoeligheid_tabel"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Yards Verloop (uitvalcurve)</h2>
+      <table>
+        <thead>
+          <tr><th>Yard</th><th class="right">Actieve lopers</th><th class="right">Uitval deze ronde</th><th class="right">Cum. yards</th></tr>
+        </thead>
+        <tbody id="yards_tabel"></tbody>
       </table>
     </div>
 
@@ -454,7 +516,48 @@ function calcForN(n) {
   const veerType = document.getElementById('veerboot_type').value;
 
   const nettoTicket = ticketprijs / 1.09;
-  const bruto = n * nettoTicket;
+  const ticketInkomsten = n * nettoTicket;
+
+  // Yards model
+  const attritionRate = val('attrition') / 100;
+  const hardcore = Math.min(val('hardcore'), n);
+  const hardcoreMax = val('hardcore_max');
+  const normalRunners = n - hardcore;
+
+  let totalYards = 0;
+  let remaining = normalRunners;
+  let yardBreakdown = [];
+  let yard = 1;
+  while (remaining > 0.5) {
+    const active = Math.round(remaining) + (yard <= hardcoreMax ? hardcore : 0);
+    totalYards += active;
+    yardBreakdown.push({ yard, active, remaining: Math.round(remaining) });
+    remaining = remaining * (1 - attritionRate);
+    yard++;
+  }
+  // Hardcore runners continue after normal runners are gone
+  for (let y = yard; y <= hardcoreMax; y++) {
+    const left = Math.max(2, Math.round(hardcore * (1 - (y - yard) / (hardcoreMax - yard + 1))));
+    totalYards += left;
+    yardBreakdown.push({ yard: y, active: left, remaining: 0 });
+    if (left <= 2) { totalYards += 2; yardBreakdown.push({ yard: y + 1, active: 2, remaining: 0 }); break; }
+  }
+  const lastYard = yardBreakdown.length > 0 ? yardBreakdown[yardBreakdown.length - 1].yard : 0;
+  const avgYardsPerRunner = n > 0 ? totalYards / n : 0;
+
+  // Extra inkomsten (per yard)
+  const foodtruckPerYard = val('foodtruck_per_yard');
+  const foodtruckPct = val('foodtruck_pct') / 100;
+  const foodtruckOmzet = totalYards * foodtruckPerYard;
+  const foodtruckAfdracht = foodtruckOmzet * foodtruckPct;
+  const shopPerYard = val('shop_per_yard');
+  const shopMargePct = val('shop_marge_pct') / 100;
+  const shopOmzet = totalYards * shopPerYard;
+  const shopMarge = shopOmzet * shopMargePct;
+  const sponsoring = val('sponsoring');
+  const extraInkomsten = foodtruckAfdracht + shopMarge + sponsoring;
+
+  const bruto = ticketInkomsten + extraInkomsten;
 
   const crewDeeln = Math.round(n * crewRatio);
   const aanwezigen = n + crewDeeln;
@@ -466,7 +569,7 @@ function calcForN(n) {
   // EHBO
   const ehbo = getEhboRequirements(aanwezigen);
   const kostenEhbo = ehbo.ehboers * ehboUur * ehboUren * dagen;
-  const kostenAed = ehbo.aed ? 50 * dagen : 0; // AED huur
+  const kostenAed = ehbo.aed ? 50 * dagen : 0;
   const kostenEhboPost = ehbo.post ? 200 * dagen : 0;
 
   // Per deelnemer
@@ -485,7 +588,9 @@ function calcForN(n) {
     kostenShirts + kostenStartnr + kostenWeeztix + kostenCrewVerg + kostenCrewVeer + kostenVast;
 
   return {
-    bruto, totaalKosten,
+    bruto, ticketInkomsten, extraInkomsten, totaalKosten,
+    totalYards, lastYard, avgYardsPerRunner, yardBreakdown,
+    foodtruckOmzet, foodtruckAfdracht, shopOmzet, shopMarge, sponsoring,
     netto: bruto - totaalKosten,
     marge: bruto > 0 ? ((bruto - totaalKosten) / bruto * 100) : 0,
     nettoTicket, veerTarief, crewDeeln, aanwezigen, ehbo,
@@ -503,7 +608,7 @@ function calc() {
   const r = calcForN(n);
 
   document.getElementById('r_bruto').textContent = fmt(r.bruto);
-  document.getElementById('r_bruto_pp').textContent = fmtDec(r.nettoTicket) + ' netto p.p.';
+  document.getElementById('r_bruto_pp').textContent = `tickets ${fmt(r.ticketInkomsten)} + extra ${fmt(r.extraInkomsten)}`;
   document.getElementById('r_kosten').textContent = fmt(r.totaalKosten);
   document.getElementById('r_kosten_pp').textContent = fmtDec(r.totaalKosten / n) + ' p.p.';
 
@@ -511,6 +616,15 @@ function calc() {
   nettoEl.textContent = fmt(r.netto);
   nettoEl.className = 'value ' + (r.netto >= 0 ? 'positive' : 'negative');
   document.getElementById('r_marge').textContent = r.marge.toFixed(1) + '% marge';
+
+  // Yards
+  document.getElementById('v_attrition').textContent = val('attrition');
+  document.getElementById('r_yards').textContent = r.totalYards.toLocaleString('nl-NL');
+  document.getElementById('r_yards_sub').textContent = `${r.lastYard} rondes · gem. ${r.avgYardsPerRunner.toFixed(1)} p.p.`;
+  document.getElementById('yards_info').innerHTML =
+    `<strong>${r.totalYards.toLocaleString('nl-NL')} totale yards</strong><br>` +
+    `${r.lastYard} rondes tot winnaar · ${r.avgYardsPerRunner.toFixed(1)} gem. yards per deelnemer<br>` +
+    `Eventduur: ~${r.lastYard} uur (1 yard = 1 uur)`;
 
   // Break-even calculation
   let be = 50;
@@ -530,6 +644,22 @@ function calc() {
     `<strong>Bij ${n} deelnemers + ~${r.crewDeeln} support crew = ${r.aanwezigen} aanwezigen:</strong><br>` +
     `Min. ${r.ehbo.ehboers} EHBO'ers · AED: ${r.ehbo.aed ? 'ja' : 'nee'} · Post: ${r.ehbo.post ? 'ja' : 'nee'}<br>` +
     `→ ${fmt(r.kostenEhbo + r.kostenAed + r.kostenEhboPost)} totaal (${r.dagen} dagen × ${val('ehbo_uren')}u)`;
+
+  // Inkomsten tabel
+  const incRows = [
+    ['Ticketverkoop', 'Variabel', `${n} × ${fmtDec(r.nettoTicket)} (excl. btw)`, r.ticketInkomsten],
+    ['Foodtruck omzetafdracht', 'Per yard', `${r.totalYards} yards × ${fmtDec(val('foodtruck_per_yard'))} × ${val('foodtruck_pct')}% = omzet ${fmt(r.foodtruckOmzet)}`, r.foodtruckAfdracht],
+    ['Eigen shop netto marge', 'Per yard', `${r.totalYards} yards × ${fmtDec(val('shop_per_yard'))} × ${val('shop_marge_pct')}% = omzet ${fmt(r.shopOmzet)}`, r.shopMarge],
+    ['Sponsoring / partnerships', 'Vast', '', r.sponsoring],
+  ];
+  let incHtml = '';
+  incRows.forEach(([naam, type, toel, bedrag]) => {
+    if (bedrag > 0) {
+      incHtml += `<tr><td>${naam}</td><td>${type}</td><td>${toel}</td><td class="right positive">${fmt(bedrag)}</td></tr>`;
+    }
+  });
+  incHtml += `<tr class="row-subtotal"><td colspan="3">Totale inkomsten</td><td class="right positive">${fmt(r.bruto)}</td></tr>`;
+  document.getElementById('inkomsten_tabel').innerHTML = incHtml;
 
   // Kosten tabel
   const rows = [
@@ -558,6 +688,9 @@ function calc() {
       html += `<tr class="row-subtotal"><td colspan="3">${type}</td><td class="right">${fmt(bedrag)}</td></tr>`;
     } else if (naam === '__total') {
       html += `<tr class="row-total"><td colspan="3">Totale kosten</td><td class="right">${fmt(bedrag)}</td></tr>`;
+      const netto = r.bruto - bedrag;
+      const cls = netto >= 0 ? 'positive' : 'negative';
+      html += `<tr class="row-total"><td colspan="3">Netto resultaat</td><td class="right ${cls}">${fmt(netto)}</td></tr>`;
     } else {
       html += `<tr><td>${naam}</td><td>${type}</td><td>${toel}</td><td class="right">${fmt(bedrag)}</td></tr>`;
     }
@@ -579,6 +712,21 @@ function calc() {
       `<td class="right ${cls}">${sr.marge.toFixed(1)}%</td></tr>`;
   });
   document.getElementById('gevoeligheid_tabel').innerHTML = html;
+
+  // Yards verloop tabel
+  html = '';
+  let cumYards = 0;
+  r.yardBreakdown.forEach((y, i) => {
+    const prev = i > 0 ? r.yardBreakdown[i - 1].active : n;
+    const uitval = i === 0 ? n - y.active : prev - y.active;
+    cumYards += y.active;
+    html += `<tr><td>${y.yard}</td>` +
+      `<td class="right">${y.active}</td>` +
+      `<td class="right">${uitval > 0 ? '-' + uitval : ''}</td>` +
+      `<td class="right">${cumYards.toLocaleString('nl-NL')}</td></tr>`;
+  });
+  html += `<tr class="row-total"><td>Totaal</td><td></td><td></td><td class="right">${r.totalYards.toLocaleString('nl-NL')}</td></tr>`;
+  document.getElementById('yards_tabel').innerHTML = html;
 
   // EHBO staffel tabel
   const ehboLevels = [50, 100, 200, 300, 500, 750, 1000, 1500];
