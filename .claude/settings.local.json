@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:event.upfront.nl)",
+      "WebFetch(domain:www.vvvterschelling.nl)",
+      "WebSearch",
+      "WebFetch(domain:www.rederij-doeksen.nl)",
+      "WebFetch(domain:www.veiligheidsregiofryslan.nl)"
+    ]
+  }
+}
