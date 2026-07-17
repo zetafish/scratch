@@ -156,6 +156,8 @@
     font-size: .8rem;
   }
   .scenario-btns button:hover { border-color: var(--accent); }
+  .scenario-btns.compact button { padding: .25rem .5rem; font-size: .75rem; }
+  .scenario-btns button.active { background: var(--accent); color: #111; border-color: var(--accent); }
 
   .breakeven-bar {
     height: 8px;
@@ -177,21 +179,19 @@
 <h1 id="page_title"></h1>
 <p class="subtitle" id="page_subtitle"></p>
 
-<div class="scenario-btns">
-  <button onclick="setScenario('klein')">Klein (100)</button>
-  <button onclick="setScenario('middel')">Middel (200)</button>
-  <button onclick="setScenario('groot')">Groot (350)</button>
-  <button onclick="setScenario('uitverkocht')">Uitverkocht (500)</button>
-</div>
-
 <div class="grid">
   <div class="controls">
 
     <div class="panel">
       <h2>Deelnemers & Tickets</h2>
+      <div class="scenario-btns compact" style="margin-bottom:.5rem">
+        <button onclick="setScenario('klein')">Klein (100)</button>
+        <button onclick="setScenario('middel')">Middel (200)</button>
+        <button onclick="setScenario('groot')">Groot (350)</button>
+      </div>
       <div class="input-group">
         <label>Aantal deelnemers: <span class="slider-value" id="v_deelnemers">200</span></label>
-        <input type="range" id="deelnemers" min="50" max="750" step="10" value="200" oninput="calc()">
+        <input type="range" id="deelnemers" min="50" max="500" step="10" value="200" oninput="calc()">
       </div>
       <div class="input-group">
         <label>Ticketprijs (incl. btw) €</label>
@@ -201,6 +201,61 @@
         <label>Support crew per deelnemer (max 2, eigen rekening)</label>
         <input type="number" id="crew_ratio" value="0.5" step="0.1" min="0" max="2" oninput="calc()">
       </div>
+    </div>
+
+    <div class="panel">
+      <h2>Foodtruck (extern) - Runners & Support</h2>
+      <div class="input-group">
+        <label>Gem. besteding per aankoop €</label>
+        <input type="number" id="foodtruck_besteding" value="8" step="1" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>1x kopen per X uur</label>
+        <input type="number" id="foodtruck_freq" value="4" step="1" min="1" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Standplaatsvergoeding €</label>
+        <input type="number" id="foodtruck_standplaats" value="250" step="100" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>% omzet afdracht aan org</label>
+        <input type="number" id="foodtruck_pct" value="20" step="1" min="0" max="50" oninput="calc()">
+      </div>
+      <div class="staffel-info" id="foodtruck_info"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Shop (eigen, sportvoeding & essentials) - Runners</h2>
+      <div class="input-group">
+        <label>Gem. besteding per aankoop €</label>
+        <input type="number" id="shop_besteding" value="4" step="1" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>1x kopen per X uur</label>
+        <input type="number" id="shop_freq" value="10" step="1" min="1" oninput="calc()">
+      </div>
+      <div class="input-group">
+        <label>Netto marge %</label>
+        <input type="number" id="shop_marge_pct" value="40" step="5" min="0" max="100" oninput="calc()">
+      </div>
+      <div class="staffel-info" id="shop_info"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Overige inkomsten</h2>
+      <div class="input-group">
+        <label>Sponsoring / partnerships €</label>
+        <input type="number" id="sponsoring" value="0" step="500" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Yards Model (uitvalpatroon)</h2>
+      <div class="scenario-btns" style="margin-bottom:.75rem">
+        <button class="yard-preset-btn active" data-preset="duv2025" onclick="setYardPreset('duv2025')">BYU NL 2025</button>
+        <button class="yard-preset-btn" data-preset="duv2026" onclick="setYardPreset('duv2026')">BYU NL 2026</button>
+      </div>
+      <div class="staffel-info" id="yards_info"></div>
     </div>
 
     <div class="panel">
@@ -226,12 +281,12 @@
         <input type="number" id="ehbo_uurtarief" value="30" step="5" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Uren per dag (event duurt 3-4 dagen)</label>
+        <label>EHBO uren per dag (niet 24u, shifts)</label>
         <input type="number" id="ehbo_uren" value="16" step="1" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Aantal eventdagen</label>
-        <input type="number" id="event_dagen" value="3" step="1" min="1" max="5" oninput="calc()">
+        <label>Op/afbouw dagen (extra naast loopdagen)</label>
+        <input type="number" id="extra_dagen" value="1" step="1" min="0" max="3" oninput="calc()">
       </div>
       <div class="staffel-info" id="ehbo_staffel_info"></div>
     </div>
@@ -280,79 +335,25 @@
       <h2>Organisatie Crew</h2>
       <div class="input-group">
         <label>Aantal org crew</label>
-        <input type="number" id="crew_org" value="15" step="1" oninput="calc()">
+        <input type="number" id="crew_org" value="10" step="1" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Vergoeding per org crew per dag €</label>
-        <input type="number" id="crew_vergoeding" value="50" step="10" oninput="calc()">
+        <label>Vergoeding cash per crew (totaal event) €</label>
+        <input type="number" id="crew_cash" value="450" step="50" oninput="calc()">
       </div>
       <div class="input-group">
-        <label id="lbl_crew_veerboot"></label>
-        <input type="number" id="crew_veerboot" value="32" step="1" oninput="calc()">
-      </div>
-    </div>
-
-    <div class="panel">
-      <h2>Yards Model (uitvalpatroon)</h2>
-      <div class="input-group">
-        <label>Veld % — niveau ≤ halve marathon</label>
-        <input type="number" id="pct_halve" value="25" step="5" min="0" max="100" oninput="calc()">
+        <label>Shoptegoed per crew (inkoopwaarde) €</label>
+        <input type="number" id="crew_shoptegoed" value="60" step="10" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Veld % — niveau marathon (6u)</label>
-        <input type="number" id="pct_marathon" value="30" step="5" min="0" max="100" oninput="calc()">
+        <label>Eten & drinken per crew per dag €</label>
+        <input type="number" id="crew_eten" value="30" step="5" oninput="calc()">
       </div>
       <div class="input-group">
-        <label>Veld % — niveau ultra 100k (15u)</label>
-        <input type="number" id="pct_100k" value="25" step="5" min="0" max="100" oninput="calc()">
+        <label>Crewkleding per persoon €</label>
+        <input type="number" id="crew_kleding" value="20" step="5" oninput="calc()">
       </div>
-      <div class="input-group">
-        <label>Veld % — niveau 24u</label>
-        <input type="number" id="pct_24u" value="12" step="1" min="0" max="100" oninput="calc()">
-      </div>
-      <div class="input-group">
-        <label>Veld % — niveau 200k+ (30u)</label>
-        <input type="number" id="pct_200k" value="6" step="1" min="0" max="100" oninput="calc()">
-      </div>
-      <div class="input-group">
-        <label>Hardcore (laatste 2, extra 5 rondes)</label>
-        <input type="number" id="pct_hardcore" value="2" step="1" min="0" max="100" oninput="calc()">
-      </div>
-      <div class="staffel-info" id="yards_pct_total"></div>
-      <div class="staffel-info" id="yards_info"></div>
-    </div>
-
-    <div class="panel">
-      <h2>Extra Inkomsten</h2>
-      <div class="input-group">
-        <label>Foodtruck gem. besteding €</label>
-        <input type="number" id="foodtruck_besteding" value="8" step="1" oninput="calc()">
-      </div>
-      <div class="input-group">
-        <label>Foodtruck: 1x kopen per X uur</label>
-        <input type="number" id="foodtruck_freq" value="4" step="1" min="1" oninput="calc()">
-      </div>
-      <div class="input-group">
-        <label>Foodtruck % omzet afdracht aan org</label>
-        <input type="number" id="foodtruck_pct" value="10" step="1" min="0" max="50" oninput="calc()">
-      </div>
-      <div class="input-group">
-        <label>Shop gem. besteding €</label>
-        <input type="number" id="shop_besteding" value="15" step="1" oninput="calc()">
-      </div>
-      <div class="input-group">
-        <label>Shop: % aanwezigen dat iets koopt</label>
-        <input type="number" id="shop_kopers_pct" value="30" step="5" min="0" max="100" oninput="calc()">
-      </div>
-      <div class="input-group">
-        <label>Shop netto marge %</label>
-        <input type="number" id="shop_marge_pct" value="40" step="5" min="0" max="100" oninput="calc()">
-      </div>
-      <div class="input-group">
-        <label>Overige sponsoring / partnerships €</label>
-        <input type="number" id="sponsoring" value="0" step="500" oninput="calc()">
-      </div>
-      <div class="staffel-info" id="omzet_info"></div>
+      <div class="staffel-info" id="crew_totaal_info"></div>
     </div>
 
   </div>
@@ -523,7 +524,7 @@ function calcForN(n) {
   const crewRatio = val('crew_ratio');
   const ehboUur = val('ehbo_uurtarief');
   const ehboUren = val('ehbo_uren');
-  const dagen = val('event_dagen');
+  const extraDagen = val('extra_dagen');
   const locatie = val('locatie_huur');
   const materiaal = val('materiaal');
   const vergunning = val('vergunning');
@@ -533,98 +534,67 @@ function calcForN(n) {
   const prijzengeld = val('prijzengeld');
   const weeztix = val('weeztix_fee');
   const crewOrg = val('crew_org');
-  const crewVerg = val('crew_vergoeding');
-  const crewVeerboot = val('crew_veerboot');
+  const crewCash = val('crew_cash');
+  const crewShoptegoed = val('crew_shoptegoed');
+  const crewEten = val('crew_eten');
+  const crewKleding = val('crew_kleding');
   const veerType = document.getElementById('veerboot_type').value;
 
   const nettoTicket = ticketprijs / 1.09;
   const ticketInkomsten = n * nettoTicket;
 
-  // Yards model — getrapte uitvalcurve
-  // Groepen met hun drempeluur (yard waarop ze uitvallen)
-  // Uitval is gespreid: begint 2 yards voor drempel, piek op drempel
-  const pctHalve = val('pct_halve');
-  const pctMarathon = val('pct_marathon');
-  const pct100k = val('pct_100k');
-  const pct24u = val('pct_24u');
-  const pct200k = val('pct_200k');
-  const pctHardcore = val('pct_hardcore');
-  const pctTotal = pctHalve + pctMarathon + pct100k + pct24u + pct200k + pctHardcore;
+  // Yards model — gebaseerd op echte BYU NL data
+  // Uitvalpercentages per yard (% van startend veld dat op die yard stopt)
+  // Gemiddelde van BYU NL 2025 (Zeewolde, 188) en BYU NL 2026 (Leersum, 189)
+  const yardProfiles = {
+    duv2025: {
+      label: 'BYU NL 2025 (Zeewolde, 188 deelnemers, winnaar 36 yards)',
+      // Per yard: % van veld dat uitvalt
+      dropPct: {7:1.1, 8:9.0, 9:6.9, 10:9.0, 11:5.9, 12:8.5, 13:4.8, 14:1.1,
+        15:16.0, 16:7.4, 17:4.3, 18:4.8, 19:2.1, 20:1.6, 21:0.5, 22:0.5,
+        23:1.1, 24:5.3, 25:1.6, 26:3.2, 28:0.5, 30:1.6, 31:0.5, 32:1.1,
+        33:0.5, 35:0.5, 36:0.5},
+      winnerYard: 36
+    },
+    duv2026: {
+      label: 'BYU NL 2026 (Leersum, 189 deelnemers, winnaar 50 yards)',
+      dropPct: {8:8.5, 9:4.8, 10:8.0, 11:5.3, 12:5.3, 13:3.7, 14:1.6,
+        15:10.1, 16:7.9, 17:6.9, 18:4.8, 19:1.6, 20:3.2, 21:2.6,
+        22:2.6, 23:0.5, 24:11.6, 25:3.2, 26:2.6, 27:1.1, 28:0.5,
+        30:0.5, 32:0.5, 34:0.5, 38:0.5, 40:0.5, 49:0.5, 50:0.5},
+      winnerYard: 50
+    },
+  };
 
-  // Normaliseer naar 100% als het niet klopt
-  const norm = pctTotal > 0 ? 100 / pctTotal : 1;
-  const groups = [
-    // [drempelYard, count] — druppelsgewijs uitval rond deze yard
-    { peak: 3,  count: Math.round(n * pctHalve * norm / 100), label: '≤halve' },
-    { peak: 6,  count: Math.round(n * pctMarathon * norm / 100), label: 'marathon' },
-    { peak: 15, count: Math.round(n * pct100k * norm / 100), label: '100k' },
-    { peak: 24, count: Math.round(n * pct24u * norm / 100), label: '24u' },
-    { peak: 30, count: Math.round(n * pct200k * norm / 100), label: '200k' },
-  ];
-  const hardcoreCount = Math.max(2, n - groups.reduce((s, g) => s + g.count, 0));
-
-  // Build per-yard dropout schedule
-  // Each group: 1-2 dropouts starting 2 yards before peak, bulk at peak, stragglers 1 after
-  const maxYard = 45;
-  const dropouts = new Array(maxYard + 1).fill(0);
-
-  groups.forEach(g => {
-    if (g.count <= 0) return;
-    const early1 = Math.max(1, g.peak - 2);
-    const early2 = Math.max(1, g.peak - 1);
-    const after = g.peak + 1;
-    // Spread: 10% at peak-2, 15% at peak-1, 50% at peak, 25% at peak+1
-    const d1 = Math.round(g.count * 0.10);
-    const d2 = Math.round(g.count * 0.15);
-    const d4 = Math.round(g.count * 0.25);
-    const d3 = g.count - d1 - d2 - d4;
-    if (early1 < g.peak) dropouts[early1] += d1;
-    if (early2 < g.peak) dropouts[early2] += d2;
-    dropouts[g.peak] += d3;
-    if (after <= maxYard) dropouts[after] += d4;
-  });
+  const activeProfile = window._yardPreset || 'duv2025';
+  const profile = yardProfiles[activeProfile];
 
   // Simulate
   let totalYards = 0;
   let active = n;
   let yardBreakdown = [];
   let lastActiveYard = 0;
+  const maxYard = (profile.winnerYard || 50) + 1;
 
-  for (let y = 1; y <= maxYard && active > 0; y++) {
+  for (let y = 1; y <= maxYard && active > 1; y++) {
     totalYards += active;
-    yardBreakdown.push({ yard: y, active, dropout: dropouts[y] || 0 });
+    const dropPct = profile.dropPct[y] || 0;
+    const dropout = Math.round(n * dropPct / 100);
+    yardBreakdown.push({ yard: y, active, dropout });
     lastActiveYard = y;
-
-    // Hardcore: no dropout after their group peers are gone, until final 5 rounds
-    if (active <= hardcoreCount && active > 2) {
-      // 10 yards of no attrition, then sudden end
-      const hardcoreStart = y;
-      for (let hy = y + 1; hy <= y + 10 && active > 2; hy++) {
-        totalYards += active;
-        yardBreakdown.push({ yard: hy, active, dropout: 0 });
-        lastActiveYard = hy;
-      }
-      // Final 5 rounds: drop to 2, then finish
-      const finalStart = lastActiveYard + 1;
-      active = 2;
-      for (let fy = finalStart; fy < finalStart + 5; fy++) {
-        totalYards += active;
-        yardBreakdown.push({ yard: fy, active, dropout: 0 });
-        lastActiveYard = fy;
-      }
-      // Final yard: winner
-      totalYards += 1;
-      yardBreakdown.push({ yard: lastActiveYard + 1, active: 1, dropout: 1 });
-      lastActiveYard++;
-      active = 0;
-      break;
-    }
-
-    active = Math.max(0, active - (dropouts[y] || 0));
+    active = Math.max(1, active - dropout);
+  }
+  // Final winner yard
+  if (active >= 1) {
+    totalYards += 1;
+    yardBreakdown.push({ yard: lastActiveYard + 1, active: 1, dropout: 0 });
+    lastActiveYard++;
   }
 
   const lastYard = lastActiveYard;
   const avgYardsPerRunner = n > 0 ? totalYards / n : 0;
+  const loopdagen = Math.ceil(lastYard / 24);
+  const dagen = loopdagen + extraDagen;
 
   // Extra inkomsten
   // Foodtruck: aanwezigen (runners + support crew) kopen gem 1x per X uur
@@ -639,14 +609,15 @@ function calcForN(n) {
   const persoonUren = totalYards + supportCrewUren;
   const foodtruckAankopen = persoonUren / foodtruckFreq;
   const foodtruckOmzet = foodtruckAankopen * foodtruckBesteding;
-  const foodtruckAfdracht = foodtruckOmzet * foodtruckPct;
+  const foodtruckStandplaats = val('foodtruck_standplaats');
+  const foodtruckAfdracht = foodtruckOmzet * foodtruckPct + foodtruckStandplaats;
 
-  // Shop: eenmalige aankoop, % van alle aanwezigen
+  // Shop: persoon-uren model (impulsaankopen, lage frequentie)
   const shopBesteding = val('shop_besteding');
-  const shopKopersPct = val('shop_kopers_pct') / 100;
+  const shopFreq = val('shop_freq');
   const shopMargePct = val('shop_marge_pct') / 100;
-  const shopKopers = Math.round(aanwezigenTotaal * shopKopersPct);
-  const shopOmzet = shopKopers * shopBesteding;
+  const shopAankopen = totalYards / shopFreq;
+  const shopOmzet = shopAankopen * shopBesteding;
   const shopMarge = shopOmzet * shopMargePct;
 
   const sponsoring = val('sponsoring');
@@ -672,27 +643,32 @@ function calcForN(n) {
   const kostenWeeztix = n * weeztix;
 
   // Crew org
-  const kostenCrewVerg = crewOrg * crewVerg * dagen;
-  const kostenCrewVeer = crewOrg * crewVeerboot;
+  const kostenCrewCash = crewOrg * crewCash;
+  const kostenCrewShoptegoed = crewOrg * crewShoptegoed;
+  const kostenCrewEten = crewOrg * crewEten * dagen;
+  const kostenCrewKleding = crewOrg * crewKleding;
+  const kostenCrewTotaal = kostenCrewCash + kostenCrewShoptegoed + kostenCrewEten + kostenCrewKleding;
 
   // Vast
   const kostenVast = locatie + materiaal + vergunning + verzekering + prijzengeld;
 
   const totaalKosten = kostenVeerboot + kostenEhbo + kostenAed + kostenEhboPost +
-    kostenShirts + kostenStartnr + kostenWeeztix + kostenCrewVerg + kostenCrewVeer + kostenVast;
+    kostenShirts + kostenStartnr + kostenWeeztix + kostenCrewTotaal + kostenVast;
 
   return {
     bruto, ticketInkomsten, extraInkomsten, totaalKosten,
-    totalYards, lastYard, avgYardsPerRunner, yardBreakdown, persoonUren,
+    totalYards, lastYard, avgYardsPerRunner, yardBreakdown, persoonUren, loopdagen, dagen,
+    profileLabel: profile.label,
     foodtruckOmzet, foodtruckAfdracht, foodtruckAankopen,
-    shopOmzet, shopMarge, shopKopers, sponsoring,
+    shopOmzet, shopMarge, shopAankopen, sponsoring,
     crewDeeln: crewDeeln,
     netto: bruto - totaalKosten,
     marge: bruto > 0 ? ((bruto - totaalKosten) / bruto * 100) : 0,
     nettoTicket, veerTarief, crewDeeln, aanwezigen, ehbo,
     kostenVeerboot, kostenEhbo, kostenAed, kostenEhboPost,
     kostenShirts, kostenStartnr, kostenWeeztix,
-    kostenCrewVerg, kostenCrewVeer, kostenVast,
+    kostenCrewCash, kostenCrewShoptegoed, kostenCrewEten, kostenCrewKleding,
+    kostenCrewTotaal, kostenVast,
     locatie, materiaal, vergunning, verzekering, prijzengeld, dagen
   };
 }
@@ -714,22 +690,28 @@ function calc() {
   document.getElementById('r_marge').textContent = r.marge.toFixed(1) + '% marge';
 
   // Yards
-  const pctSum = val('pct_halve') + val('pct_marathon') + val('pct_100k') + val('pct_24u') + val('pct_200k') + val('pct_hardcore');
-  const pctEl = document.getElementById('yards_pct_total');
-  pctEl.innerHTML = pctSum === 100
-    ? `<strong>Veldverdeling: ${pctSum}%</strong> ✓`
-    : `<strong style="color:var(--orange)">Veldverdeling: ${pctSum}%</strong> (wordt genormaliseerd naar 100%)`;
-
   document.getElementById('r_yards').textContent = r.totalYards.toLocaleString('nl-NL');
   document.getElementById('r_yards_sub').textContent = `${r.lastYard} rondes · gem. ${r.avgYardsPerRunner.toFixed(1)} p.p.`;
   document.getElementById('yards_info').innerHTML =
-    `<strong>${r.totalYards.toLocaleString('nl-NL')} totale yards</strong><br>` +
-    `${r.lastYard} rondes tot winnaar · ${r.avgYardsPerRunner.toFixed(1)} gem. yards per deelnemer<br>` +
-    `Eventduur: ~${r.lastYard} uur (1 yard = 1 uur)`;
+    `<strong>Profiel: ${r.profileLabel}</strong><br>` +
+    `<strong>${r.totalYards.toLocaleString('nl-NL')} totale yards</strong> · ` +
+    `${r.lastYard} rondes tot winnaar · ${r.avgYardsPerRunner.toFixed(1)} gem. per deelnemer<br>` +
+    `Eventduur: ~${r.lastYard} uur = ${r.loopdagen} loopdagen + ${val('extra_dagen')} op/afbouw = ${r.dagen} dagen totaal`;
 
-  document.getElementById('omzet_info').innerHTML =
-    `<strong>Foodtruck:</strong> ${r.persoonUren.toLocaleString('nl-NL')} persoon-uren ÷ ${val('foodtruck_freq')}u = ~${Math.round(r.foodtruckAankopen)} aankopen → omzet ${fmt(r.foodtruckOmzet)}<br>` +
-    `<strong>Shop:</strong> ${r.shopKopers} kopers van ${n + r.crewDeeln} aanwezigen → omzet ${fmt(r.shopOmzet)}`;
+  const crewPP = r.kostenCrewTotaal / val('crew_org');
+  document.getElementById('crew_totaal_info').innerHTML =
+    `<strong>Totaal per crew: ${fmt(crewPP)}</strong> (cash + shoptegoed inkoop + eten + kleding)<br>` +
+    `<strong>Totaal org crew: ${fmt(r.kostenCrewTotaal)}</strong> (${val('crew_org')} personen)<br>` +
+    `<em>Shoptegoed €150 waarde → werkelijke kost = inkoopprijs (~${fmtDec(val('crew_shoptegoed'))})</em>`;
+
+  document.getElementById('foodtruck_info').innerHTML =
+    `${r.persoonUren.toLocaleString('nl-NL')} persoon-uren ÷ ${val('foodtruck_freq')}u = ~${Math.round(r.foodtruckAankopen)} aankopen<br>` +
+    `Omzet foodtruck: ${fmt(r.foodtruckOmzet)} → <strong>inkomsten org: ${fmt(r.foodtruckAfdracht)}</strong><br>` +
+    `(standplaats ${fmt(val('foodtruck_standplaats'))} + ${val('foodtruck_pct')}% omzet)`;
+
+  document.getElementById('shop_info').innerHTML =
+    `${r.totalYards.toLocaleString('nl-NL')} runner-uren ÷ ${val('shop_freq')}u = ~${Math.round(r.shopAankopen)} aankopen<br>` +
+    `Omzet: ${fmt(r.shopOmzet)} → <strong>netto marge: ${fmt(r.shopMarge)}</strong>`;
 
   // Break-even calculation
   let be = 50;
@@ -748,13 +730,14 @@ function calc() {
   document.getElementById('ehbo_staffel_info').innerHTML =
     `<strong>Bij ${n} deelnemers + ~${r.crewDeeln} support crew = ${r.aanwezigen} aanwezigen:</strong><br>` +
     `Min. ${r.ehbo.ehboers} EHBO'ers · AED: ${r.ehbo.aed ? 'ja' : 'nee'} · Post: ${r.ehbo.post ? 'ja' : 'nee'}<br>` +
-    `→ ${fmt(r.kostenEhbo + r.kostenAed + r.kostenEhboPost)} totaal (${r.dagen} dagen × ${val('ehbo_uren')}u)`;
+    `${r.loopdagen} loopdagen + ${val('extra_dagen')} op/afbouw = <strong>${r.dagen} dagen</strong> (${r.lastYard} uur → ${r.loopdagen}d)<br>` +
+    `→ ${fmt(r.kostenEhbo + r.kostenAed + r.kostenEhboPost)} totaal (${r.dagen}d × ${val('ehbo_uren')}u)`;
 
   // Inkomsten tabel
   const incRows = [
     ['Ticketverkoop', 'Variabel', `${n} × ${fmtDec(r.nettoTicket)} (excl. btw)`, r.ticketInkomsten],
-    ['Foodtruck omzetafdracht', 'Variabel', `${Math.round(r.foodtruckAankopen)} aankopen × ${fmtDec(val('foodtruck_besteding'))} × ${val('foodtruck_pct')}% → omzet ${fmt(r.foodtruckOmzet)}`, r.foodtruckAfdracht],
-    ['Eigen shop netto marge', 'Variabel', `${r.shopKopers} kopers × ${fmtDec(val('shop_besteding'))} × ${val('shop_marge_pct')}% → omzet ${fmt(r.shopOmzet)}`, r.shopMarge],
+    ['Foodtruck (standplaats + afdracht)', 'Vast+Var', `${fmt(val('foodtruck_standplaats'))} + ${val('foodtruck_pct')}% van ${fmt(r.foodtruckOmzet)} omzet`, r.foodtruckAfdracht],
+    ['Eigen shop netto marge', 'Variabel', `${Math.round(r.shopAankopen)} aankopen × ${fmtDec(val('shop_besteding'))} × ${val('shop_marge_pct')}% → omzet ${fmt(r.shopOmzet)}`, r.shopMarge],
     ['Sponsoring / partnerships', 'Vast', '', r.sponsoring],
   ];
   let incHtml = '';
@@ -781,9 +764,11 @@ function calc() {
     ['Vergunning & leges', 'Vast', `${CFG.gemeente} + omgevingsvergunning`, r.vergunning],
     ['Verzekering', 'Vast', 'Evenementenverzekering', r.verzekering],
     ['Prijzengeld', 'Vast', '', r.prijzengeld],
-    ['Org crew vergoeding', 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_vergoeding'))} × ${r.dagen}d`, r.kostenCrewVerg],
-    [`Org crew ${CFG.rederij}`, 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_veerboot'))} retour`, r.kostenCrewVeer],
-    ['__sub', 'Vaste kosten', '', r.kostenVast + r.kostenCrewVerg + r.kostenCrewVeer],
+    ['Org crew cash vergoeding', 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_cash'))}`, r.kostenCrewCash],
+    ['Org crew shoptegoed (inkoop)', 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_shoptegoed'))} (€150 waarde, ~40% inkoop)`, r.kostenCrewShoptegoed],
+    ['Org crew eten & drinken', 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_eten'))} × ${r.dagen}d`, r.kostenCrewEten],
+    ['Org crew kleding', 'Vast', `${val('crew_org')} × ${fmtDec(val('crew_kleding'))}`, r.kostenCrewKleding],
+    ['__sub', 'Vaste kosten', '', r.kostenVast + r.kostenCrewTotaal],
     ['__total', '', '', r.totaalKosten],
   ];
 
@@ -865,6 +850,14 @@ function calc() {
   document.getElementById('veerboot_tabel').innerHTML = html;
 }
 
+function setYardPreset(name) {
+  window._yardPreset = name;
+  document.querySelectorAll('.yard-preset-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.preset === name);
+  });
+  calc();
+}
+
 function setScenario(name) {
   const el = document.getElementById('deelnemers');
   const scenarios = { klein: 100, middel: 200, groot: 350, uitverkocht: 500 };
@@ -881,9 +874,9 @@ function initLabels() {
   document.getElementById('staffel_veer_label').textContent = `Staffel ${CFG.rederij} (enkel, winter):`;
   document.getElementById('lbl_locatie').textContent = `Locatiehuur ${CFG.basecamp} (totaal) €`;
   document.getElementById('lbl_ticketplatform').textContent = `${CFG.ticketPlatform} commissie per ticket €`;
-  document.getElementById('lbl_crew_veerboot').textContent = `${CFG.rederij} org crew (retour p.p.) €`;
 }
 
+window._yardPreset = 'duv2025';
 initLabels();
 calc();
 </script>
